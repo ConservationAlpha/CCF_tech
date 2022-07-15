@@ -1,0 +1,156 @@
+# Connected Conservation Foundation Framework v1
+
+
+#Impact
+
+```{r,echo=F,eval=T}
+library(tidyverse)
+library(readxl)
+library(dplyr)
+
+df_raw <- read_excel("C:/Users/Chris Barichievy/Conservation Alpha/Connected Conservation Foundation - General/Deliverables/Final/Framework Beta1.xlsx", sheet="Example Indicator")
+
+#subset columns
+df<-df_raw[,c("Indicator","Baseline","Current")]
+nm<-df$Indicator
+#add max and min values
+df$max<-max(c(df$Baseline,df$Current))
+df$min<-min(c(df$Baseline,df$Current))
+
+#order for radarchart
+df<-df[,c("max","min","Baseline","Current")]
+df<-df
+#transpose columns
+dft<-data.frame(t(df))
+names(dft)<-nm
+
+cols<-rep("grey",dim(df)[1])
+i<-which((df$Current-df$Baseline)>0)
+cols[i]<-"#006600"
+i<-which((df$Current-df$Baseline)<0)
+cols[i]<-"#FF0000"
+
+#prepar data for the columngraphic
+dft %>% slice(c(3,4)) %>% t() %>% as.data.frame() %>% add_rownames() %>% arrange(Baseline) %>% mutate(rowname=factor(rowname, rowname)) %>%
+  ggplot( aes(x=rowname, y=Baseline)) +
+  geom_segment( aes(x=rowname ,xend=rowname, y=Baseline, yend=Current), color="grey") +
+  geom_point(size=5,color="grey", alpha=0.5) +
+  geom_point(aes(y=Current), size=5, shape='diamond', color=cols,alpha=0.5) +
+  theme_bw() +
+  theme(
+    panel.grid.minor.y = element_blank(),
+    panel.grid.major.y = element_blank(),
+    axis.text = element_text( size=8 ),
+    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)
+  ) +
+  coord_flip()+
+  scale_x_discrete(limits=rev)+
+   ylim(0,2) +
+  ylab("Change in metric") +
+  xlab("")
+
+
+i<-which((dft[4,]-dft[3,])==0)
+dftd<-dft[,-i]
+dftd_t<-data.frame(t(dftd))
+
+cols<-rep("grey",dim(dftd_t)[1])
+i<-which((dftd_t$Current-dftd_t$Baseline)>0)
+cols[i]<-"#006600"
+i<-which((dftd_t$Current-dftd_t$Baseline)<0)
+cols[i]<-"#FF0000"
+#prepar data for the columngraphic
+dftd %>% slice(c(3,4)) %>% t() %>% as.data.frame() %>% add_rownames() %>% arrange(Baseline) %>% mutate(rowname=factor(rowname, rowname)) %>%
+  ggplot( aes(x=rowname, y=Baseline)) +
+  geom_segment( aes(x=rowname ,xend=rowname, y=Baseline, yend=Current), color="grey") +
+  geom_point(size=5,color="grey", alpha=0.5) +
+  geom_point(aes(y=Current), size=5, shape='diamond', color=cols,alpha=0.5)+
+  theme_bw() +
+  theme(
+    panel.grid.minor.y = element_blank(),
+    panel.grid.major.y = element_blank(),
+    axis.text = element_text( size=8 ),
+    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)
+  ) +
+  coord_flip()+
+  scale_x_discrete(limits=rev)+
+   ylim(0,2) +
+  ylab("Change in metric") +
+  xlab("")
+
+
+
+```
+
+#Outcomes
+
+```{r,eval=T,echo=F}
+#prepare data for teh radar graph
+df_r<-df_raw %>%
+  group_by(Outcome) %>%
+  summarise(baseline = sum(Baseline),current=mean(Current))
+
+df_r$max<-max(df_r$baseline,df_r$current)
+df_r$min<-min(df_r$baseline,df_r$current)
+nm<-df_r$Outcome
+
+df_r<-df_r[,c("max","min","baseline","current")]
+df_r<-data.frame(t(df_r))
+#fix names
+nm[nm=="Improved alignment to PA values"]<- "Improved alignment \n to PA values"
+nm[nm=="Improved management and protection"]<-"Improved management \n and protection"
+nm[nm=="Increased logistical feasibility"]<-  "Increased \n logistical feasibility"
+nm[nm=="Reduced capital cost" ]<- "Reduced \n capital cost"           
+nm[nm=="Reduced operating cost"]<- "Reduced \n operating cost" 
+nm[nm=="Reduced operational risk" ]<-  "Reduced \n operational risk"    
+nm[nm=="Reduced organizational risk"]<-"Reduced \n organizational risk"
+nm[nm=="Reduced risk to stakeholders"]<-  "Reduced risk \n to stakeholders"    
+nm[nm=="Time and effort saved"]<-"Time and \n effort saved"
+
+
+names(df_r)<-nm
+
+colors_border=c(rgb(0.65,0.105,0.225,0.9),rgb(0.1,0.1,0.1,0.5))
+colors_in=c(rgb(.65,.105,.225,0.4),rgb(0.1,0.1,0.1,0.4))
+
+radarchart(df_r, axistype=0,
+             #custom polygon
+  pcol=colors_border , pfcol=colors_in , plwd=2, plty=1 , 
+
+  #custom the grid
+  cglcol="grey", cglty=1, axislabcol="grey", caxislabels=seq(0,2.5,0.5), cglwd=1.1,
+
+  #custom labels
+  vlcex=0.6 ,
+  
+  #title="CCF impact framework at outcomes level"
+           )
+# Legend
+legend(x=1.2, y=1.3, legend = c("Mean current value","Mean baseline value"), bty = "n", pch=20 , col=colors_border , text.col = "black", cex=0.6, pt.cex=1.6)
+```
+
+#Impact 
+
+```{r,eval=T,echo=F}
+library(reshape2)
+#prepare data for teh radar graph
+df_a<-df_raw %>%
+  group_by(Aim) %>%
+  summarise("Sum baseline" = sum(Baseline),"Sum current"=sum(Current))
+
+df_a<-melt(df_a)
+df_a$Aim[df_a$Aim=="IMPROVED COST EFFECTIVENESS"]<-"Improved \n cost \n effectiveness"
+df_a$Aim[df_a$Aim=="IMPROVED OPERATIONAL EFFECTIVENESS"]<-"Improved \n operational \n effectiveness"
+df_a$Aim[df_a$Aim=="REDUCED RISK"]<-"Reduced risk"   
+
+ggplot(data=df_a)+aes(x = Aim, y= value, fill = variable)+ 
+  xlab("Aim" )+
+   geom_bar(stat="identity", width=.5, position = "dodge") +
+  theme_bw()+
+   theme(axis.text.x=element_text(angle=90,hjust=1)) +
+  scale_fill_manual(values=c(rgb(0.1,0.1,0.1,0.5),rgb(0.65,0.105,0.225,0.5)))+
+  guides(fill=guide_legend(title="Time period"))+
+  #ggtitle("CCF impact framework at aim level")+
+  ylab("Relative value")
+  
+```
